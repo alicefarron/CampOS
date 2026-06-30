@@ -1,0 +1,30 @@
+@startuml context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title CampOS — System Context Diagram
+
+Person(participant, "Participant", "Registers for camps and activities,\nviews schedule, manages registrations.")
+
+Person(organiser, "Camp Organiser", "Creates and manages camps,\ndefines activities, monitors registrations.")
+
+Person(admin, "Administrator", "Manages platform settings,\nusers, and monitors system health.")
+
+System(campost, "CampOS", "Platform for managing outdoor camps:\nregistration, scheduling, waitlists,\nand participant communication.")
+
+System_Ext(email, "Email Provider", "Transactional emails — confirmations,\nwaitlist notifications, reminders.\n(e.g. SendGrid, Postmark)")
+
+System_Ext(payment, "Payment Gateway", "Processes registration fees.\n(e.g. Stripe)")
+
+System_Ext(storage, "Object Storage", "Stores uploaded files —\ncamp photos, documents.\n(e.g. S3-compatible)")
+
+Rel(participant, campost, "Browses camps, registers,\nmanages waitlist", "HTTPS")
+Rel(organiser, campost, "Creates camps and activities,\nreviews registrations", "HTTPS")
+Rel(admin, campost, "Administers platform", "HTTPS")
+
+Rel(campost, email, "Sends transactional emails", "SMTP / API")
+Rel(campost, payment, "Initiates and verifies payments", "HTTPS / Webhooks")
+Rel(campost, storage, "Uploads and serves files", "HTTPS")
+
+@enduml

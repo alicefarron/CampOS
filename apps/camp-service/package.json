@@ -1,0 +1,27 @@
+{
+  "name": "@campost/camp-service",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --build",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@campost/shared-events": "workspace:*",
+    "drizzle-orm": "^0.33.0",
+    "fastify": "^4.28.0",
+    "kafkajs": "^2.2.4",
+    "postgres": "^3.4.4",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@campost/tsconfig": "workspace:*",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}

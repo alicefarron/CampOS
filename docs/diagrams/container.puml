@@ -1,0 +1,54 @@
+@startuml container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title CampOS — Container Diagram
+
+Person(participant, "Participant")
+Person(organiser, "Camp Organiser")
+Person(admin, "Administrator")
+
+System_Ext(email, "Email Provider")
+System_Ext(payment, "Payment Gateway")
+System_Ext(storage, "Object Storage")
+
+System_Boundary(campost, "CampOS") {
+
+    Container(web, "Web App", "React, TypeScript", "SPA for participants and organisers.\nServer-side rendering for public pages.")
+
+    Container(api, "API Server", "Node.js, Fastify, TypeScript", "REST API (OpenAPI 3.1).\nHandles business logic: camps, activities,\nregistrations, waitlist, payments.")
+
+    Container(notification, "Notification Service", "Node.js, TypeScript", "Consumes domain events from Kafka.\nSends emails and push notifications.")
+
+    Container(relay, "Outbox Relay", "Node.js, TypeScript", "Polls outbox_events table\nand publishes events to Kafka.\nSee ADR-0005.")
+
+    ContainerDb(postgres, "PostgreSQL 16", "PostgreSQL", "Primary data store.\nStores camps, activities, registrations,\nparticipants, outbox_events.")
+
+    ContainerDb(redis, "Redis 7", "Redis", "Session store, idempotency keys,\nrate limiting, short-lived caches.")
+
+    Container(kafka, "Kafka", "Confluent, KRaft", "Event streaming backbone.\nTopics: camps, activities, registrations.\nSee ADR-0001.")
+
+    Container(kafka_ui, "Kafka UI", "Provectus kafka-ui", "Dev/ops tool for browsing\ntopics and consumer groups.\n[local dev only]")
+}
+
+Rel(participant, web, "Uses", "HTTPS")
+Rel(organiser, web, "Uses", "HTTPS")
+Rel(admin, web, "Uses", "HTTPS")
+
+Rel(web, api, "API calls", "HTTPS / REST + JSON")
+
+Rel(api, postgres, "Reads and writes\nbusiness data + outbox_events", "TCP / SQL")
+Rel(api, redis, "Sessions, caches,\nidempotency keys", "TCP / RESP")
+Rel(api, payment, "Initiates payments,\nreceives webhooks", "HTTPS")
+Rel(api, storage, "Uploads files,\ngenerates presigned URLs", "HTTPS")
+
+Rel(relay, postgres, "Polls outbox_events\n(SELECT FOR UPDATE SKIP LOCKED)", "TCP / SQL")
+Rel(relay, kafka, "Publishes domain events", "TCP / Kafka protocol")
+
+Rel(notification, kafka, "Consumes registration\nand camp events", "TCP / Kafka protocol")
+Rel(notification, email, "Sends transactional emails", "HTTPS / API")
+
+Rel(kafka_ui, kafka, "Inspects topics\nand consumer groups", "TCP / Kafka protocol")
+
+@enduml
