@@ -15,6 +15,7 @@ export const TOPICS = {
   CAMPS: "camps",
   ACTIVITIES: "activities",
   REGISTRATIONS: "registrations",
+  NEWS: "news",
 } as const;
 
 export type Topic = (typeof TOPICS)[keyof typeof TOPICS];

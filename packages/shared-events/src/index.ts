@@ -1,12 +1,21 @@
 export type { KafkaEvent, Topic } from "./base.js";
 export { TOPICS } from "./base.js";
 
+export type {
+  NewsPublishedPayload,
+  NewsPublishedEvent,
+  NewsEvent,
+} from "./events/news.js";
+export { NEWS_EVENT_TYPES } from "./events/news.js";
+
 export type { CampCreatedPayload, CampCreatedEvent, CampEvent } from "./events/camp.js";
 export { CAMP_EVENT_TYPES } from "./events/camp.js";
 
 export type {
   ActivityCreatedPayload,
   ActivityCreatedEvent,
+  ActivityCancelledPayload,
+  ActivityCancelledEvent,
   ActivityEvent,
 } from "./events/activity.js";
 export { ACTIVITY_EVENT_TYPES } from "./events/activity.js";
@@ -29,5 +38,6 @@ export type { ActivityEvent as ActivityEvents } from "./events/activity.js";
 import type { CampEvent } from "./events/camp.js";
 import type { ActivityEvent } from "./events/activity.js";
 import type { RegistrationEvent } from "./events/participant.js";
+import type { NewsEvent } from "./events/news.js";
 
-export type DomainEvent = CampEvent | ActivityEvent | RegistrationEvent;
+export type DomainEvent = CampEvent | ActivityEvent | RegistrationEvent | NewsEvent;

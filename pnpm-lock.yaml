@@ -58,6 +58,68 @@ importers:
         specifier: ^5.5.0
         version: 5.9.3
 
+  apps/news-service:
+    dependencies:
+      '@campost/shared-events':
+        specifier: workspace:*
+        version: link:../../packages/shared-events
+      drizzle-orm:
+        specifier: ^0.33.0
+        version: 0.33.0(postgres@3.4.9)
+      fastify:
+        specifier: ^4.28.0
+        version: 4.29.1
+      kafkajs:
+        specifier: ^2.2.4
+        version: 2.2.4
+      postgres:
+        specifier: ^3.4.4
+        version: 3.4.9
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
+    devDependencies:
+      '@campost/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.21
+      tsx:
+        specifier: ^4.16.0
+        version: 4.22.4
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+
+  apps/notification-service:
+    dependencies:
+      '@campost/shared-events':
+        specifier: workspace:*
+        version: link:../../packages/shared-events
+      kafkajs:
+        specifier: ^2.2.4
+        version: 2.2.4
+      postgres:
+        specifier: ^3.4.4
+        version: 3.4.9
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
+    devDependencies:
+      '@campost/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.21
+      tsx:
+        specifier: ^4.16.0
+        version: 4.22.4
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+
   apps/registration-service:
     dependencies:
       '@campost/shared-events':
