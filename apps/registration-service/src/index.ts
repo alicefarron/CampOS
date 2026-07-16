@@ -1,5 +1,6 @@
 import { buildApp } from "./app.js";
 import { config } from "./config.js";
+import { startActivityCancelledConsumer } from "./consumers/activity-cancelled.js";
 import { startCampConsumer } from "./consumers/camp-created.js";
 import { pg } from "./db/client.js";
 import { runMigrations } from "./db/migrate.js";
@@ -11,12 +12,14 @@ async function main(): Promise<void> {
   await resetStuckEvents();
 
   const stopCampConsumer = await startCampConsumer();
+  const stopActivityCancelledConsumer = await startActivityCancelledConsumer();
   const app = buildApp();
   const relayTimer = startOutboxRelay();
 
   const shutdown = async () => {
     clearInterval(relayTimer);
     await stopCampConsumer();
+    await stopActivityCancelledConsumer();
     await disconnectProducer();
     await app.close();
     await pg.end();

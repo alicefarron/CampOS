@@ -60,6 +60,42 @@ const CreateBody = z.object({
 
 export async function registrationRoutes(app: FastifyInstance): Promise<void> {
   /**
+   * GET /registrations
+   *
+   * Optional filters: ?campId= and/or ?participantId=
+   * Returns registrations ordered by registered_at DESC.
+   */
+  app.get<{ Querystring: { campId?: string; participantId?: string } }>(
+    "/registrations",
+    {
+      schema: {
+        tags: ["Registrations"],
+        summary: "List registrations",
+        querystring: {
+          type: "object",
+          properties: {
+            campId: { type: "string", format: "uuid", description: "Filter by camp" },
+            participantId: { type: "string", description: "Filter by participant" },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { campId, participantId } = request.query;
+
+      const rows = await pg<RegRow[]>`
+        SELECT *
+        FROM   registrations
+        WHERE  (${campId ?? null}::uuid IS NULL OR camp_id = ${campId ?? null}::uuid)
+          AND  (${participantId ?? null}::text IS NULL OR participant_id = ${participantId ?? null}::text)
+        ORDER  BY registered_at DESC
+      `;
+
+      return reply.send(rows);
+    },
+  );
+
+  /**
    * POST /registrations
    *
    * Idempotency-Key header (optional, UUID):
@@ -72,7 +108,21 @@ export async function registrationRoutes(app: FastifyInstance): Promise<void> {
    *     WHERE status != 'cancelled' catches any race that bypasses the app check.
    *   - PostgreSQL 23505 unique_violation is mapped to 409.
    */
-  app.post("/registrations", async (request, reply) => {
+  app.post("/registrations", {
+    schema: {
+      tags: ["Registrations"],
+      summary: "Register a participant",
+      body: {
+        type: "object",
+        required: ["campId", "participantId"],
+        properties: {
+          campId: { type: "string", format: "uuid" },
+          activityId: { type: "string", format: "uuid" },
+          participantId: { type: "string", minLength: 1 },
+        },
+      },
+    },
+  }, async (request, reply) => {
     const parsed = CreateBody.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: "Validation error", issues: parsed.error.issues });
@@ -183,7 +233,19 @@ export async function registrationRoutes(app: FastifyInstance): Promise<void> {
    *   4. Cancel + emit RegistrationCancelled
    *   5. If was 'confirmed' → promote first waitlisted + emit WaitlistPromoted
    */
-  app.delete<{ Params: { id: string } }>("/registrations/:id", async (request, reply) => {
+  app.delete<{ Params: { id: string } }>("/registrations/:id", {
+    schema: {
+      tags: ["Registrations"],
+      summary: "Cancel a registration",
+      params: {
+        type: "object",
+        required: ["id"],
+        properties: {
+          id: { type: "string", format: "uuid" },
+        },
+      },
+    },
+  }, async (request, reply) => {
     const { id } = request.params;
 
     try {

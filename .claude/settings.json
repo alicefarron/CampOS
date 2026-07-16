@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter @campost/camp-service typecheck)",
+      "Bash(pnpm --filter @campost/notification-service typecheck)",
+      "Bash(pnpm --filter @campost/registration-service typecheck)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm --filter @campost/news-service typecheck)"
+    ]
+  }
+}

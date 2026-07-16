@@ -75,7 +75,22 @@ export async function newsRoutes(app: FastifyInstance): Promise<void> {
    * Creates a news article. If status is "published", emits NewsPublished
    * via the Outbox in the same transaction.
    */
-  app.post("/news", async (request, reply) => {
+  app.post("/news", {
+    schema: {
+      tags: ["News"],
+      summary: "Create a news article",
+      body: {
+        type: "object",
+        required: ["title", "body", "authorId"],
+        properties: {
+          title: { type: "string", minLength: 1 },
+          body: { type: "string", minLength: 1 },
+          authorId: { type: "string", minLength: 1 },
+          status: { type: "string", enum: ["draft", "published"], default: "draft" },
+        },
+      },
+    },
+  }, async (request, reply) => {
     const parsed = CreateBody.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: "Validation error", issues: parsed.error.issues });
@@ -119,7 +134,18 @@ export async function newsRoutes(app: FastifyInstance): Promise<void> {
    * Returns all news articles, optionally filtered by status.
    * ?status=published | draft
    */
-  app.get<{ Querystring: { status?: string } }>("/news", async (request, reply) => {
+  app.get<{ Querystring: { status?: string } }>("/news", {
+    schema: {
+      tags: ["News"],
+      summary: "List news articles",
+      querystring: {
+        type: "object",
+        properties: {
+          status: { type: "string", enum: ["draft", "published"], description: "Filter by status" },
+        },
+      },
+    },
+  }, async (request, reply) => {
     const { status } = request.query;
 
     const rows = status
@@ -135,7 +161,28 @@ export async function newsRoutes(app: FastifyInstance): Promise<void> {
    * Partial update. If status transitions to "published" for the first time,
    * sets publishedAt and emits NewsPublished via the Outbox.
    */
-  app.patch<{ Params: { id: string } }>("/news/:id", async (request, reply) => {
+  app.patch<{ Params: { id: string } }>("/news/:id", {
+    schema: {
+      tags: ["News"],
+      summary: "Update a news article",
+      params: {
+        type: "object",
+        required: ["id"],
+        properties: {
+          id: { type: "string", format: "uuid" },
+        },
+      },
+      body: {
+        type: "object",
+        minProperties: 1,
+        properties: {
+          title: { type: "string", minLength: 1 },
+          body: { type: "string", minLength: 1 },
+          status: { type: "string", enum: ["draft", "published"] },
+        },
+      },
+    },
+  }, async (request, reply) => {
     const { id } = request.params;
 
     const parsed = PatchBody.safeParse(request.body);

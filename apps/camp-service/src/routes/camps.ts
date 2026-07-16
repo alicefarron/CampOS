@@ -18,7 +18,32 @@ const CreateCampBody = z.object({
 });
 
 export async function campRoutes(app: FastifyInstance): Promise<void> {
-  app.post("/camps", async (request, reply) => {
+  app.post("/camps", {
+    schema: {
+      tags: ["Camps"],
+      summary: "Create a camp",
+      body: {
+        type: "object",
+        required: ["name", "organiserId", "startDate", "endDate", "capacity", "location"],
+        properties: {
+          name: { type: "string", minLength: 1 },
+          organiserId: { type: "string", format: "uuid" },
+          startDate: { type: "string", format: "date-time" },
+          endDate: { type: "string", format: "date-time" },
+          capacity: { type: "integer", minimum: 1 },
+          location: {
+            type: "object",
+            required: ["country", "city"],
+            properties: {
+              country: { type: "string" },
+              city: { type: "string" },
+              address: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
     const result = CreateCampBody.safeParse(request.body);
     if (!result.success) {
       return reply.status(400).send({ error: "Validation error", issues: result.error.issues });

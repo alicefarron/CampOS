@@ -31,6 +31,7 @@ export const activities = pgTable(
     durationMinutes: integer("duration_minutes").notNull(),
     capacity: integer("capacity").notNull(),
     instructorId: text("instructor_id"),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({ campIdIdx: index("activities_camp_id_idx").on(t.campId) }),

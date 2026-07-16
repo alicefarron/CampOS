@@ -13,8 +13,66 @@ import type {
   WaitlistPromotedEvent,
 } from "@campost/shared-events";
 import { Kafka } from "kafkajs";
+import type { Producer } from "kafkajs";
 import { config } from "./config.js";
 import { pg } from "./db/client.js";
+
+// ---------------------------------------------------------------------------
+// DLQ / retry helpers
+// ---------------------------------------------------------------------------
+
+const DLQ_TOPIC = "notification-events-dlq";
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 500;
+
+type RawMessage = { value: Buffer | null; key: Buffer | string | null | undefined };
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withRetryAndDlq(
+  producer: Producer,
+  topic: string,
+  message: RawMessage,
+  handler: () => Promise<void>,
+): Promise<void> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      await handler();
+      return;
+    } catch (err) {
+      lastError = err;
+      console.error(
+        `[consumer:${topic}] handler failed (attempt ${attempt}/${MAX_RETRIES}):`,
+        err instanceof Error ? err.message : err,
+      );
+      if (attempt < MAX_RETRIES) {
+        await sleep(RETRY_BASE_DELAY_MS * attempt);
+      }
+    }
+  }
+
+  // All retries exhausted — forward to DLQ so the offset can advance.
+  const dlqPayload = JSON.stringify({
+    originalTopic: topic,
+    originalMessage: message.value?.toString() ?? null,
+    error: lastError instanceof Error ? lastError.message : String(lastError),
+    failedAt: new Date().toISOString(),
+    attempts: MAX_RETRIES,
+  });
+
+  await producer.send({
+    topic: DLQ_TOPIC,
+    messages: [{ value: dlqPayload }],
+  });
+
+  console.error(
+    `[consumer:dlq] message from topic "${topic}" forwarded to ${DLQ_TOPIC} after ${MAX_RETRIES} attempts`,
+  );
+}
 
 type ParticipantRow = { participant_id: string };
 type SeenRow = { event_id: string };
@@ -26,8 +84,11 @@ export async function startNotificationConsumer(): Promise<() => Promise<void>> 
   });
 
   const consumer = kafka.consumer({ groupId: "notification-service" });
+  const dlqProducer = kafka.producer();
 
   await consumer.connect();
+  await dlqProducer.connect();
+
   await consumer.subscribe({ topic: TOPICS.REGISTRATIONS, fromBeginning: true });
   await consumer.subscribe({ topic: TOPICS.ACTIVITIES, fromBeginning: true });
   await consumer.subscribe({ topic: TOPICS.NEWS, fromBeginning: true });
@@ -44,11 +105,14 @@ export async function startNotificationConsumer(): Promise<() => Promise<void>> 
         return;
       }
 
-      await handleEvent(event);
+      await withRetryAndDlq(dlqProducer, topic, message, () => handleEvent(event));
     },
   });
 
-  return () => consumer.disconnect();
+  return async () => {
+    await consumer.disconnect();
+    await dlqProducer.disconnect();
+  };
 }
 
 async function handleEvent(event: DomainEvent): Promise<void> {

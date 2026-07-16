@@ -12,6 +12,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-campost}"]
       interval: 10s
@@ -68,6 +69,85 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     depends_on:
+      kafka:
+        condition: service_healthy
+
+  camp-service:
+    build:
+      context: .
+      args:
+        SERVICE: camp-service
+        PORT: 3001
+    restart: unless-stopped
+    ports:
+      - "${CAMP_SERVICE_PORT:-3001}:3001"
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgres://${POSTGRES_USER:-campost}:${POSTGRES_PASSWORD:-campost}@postgres:5432/campost
+      KAFKA_BROKERS: kafka:9092
+      OUTBOX_POLL_INTERVAL_MS: ${OUTBOX_POLL_INTERVAL_MS:-1000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  registration-service:
+    build:
+      context: .
+      args:
+        SERVICE: registration-service
+        PORT: 3002
+    restart: unless-stopped
+    ports:
+      - "${REGISTRATION_SERVICE_PORT:-3002}:3002"
+    environment:
+      PORT: 3002
+      DATABASE_URL: postgres://${POSTGRES_USER:-campost}:${POSTGRES_PASSWORD:-campost}@postgres:5432/campost_registrations
+      KAFKA_BROKERS: kafka:9092
+      OUTBOX_POLL_INTERVAL_MS: ${OUTBOX_POLL_INTERVAL_MS:-1000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  news-service:
+    build:
+      context: .
+      args:
+        SERVICE: news-service
+        PORT: 3003
+    restart: unless-stopped
+    ports:
+      - "${NEWS_SERVICE_PORT:-3003}:3003"
+    environment:
+      PORT: 3003
+      DATABASE_URL: postgres://${POSTGRES_USER:-campost}:${POSTGRES_PASSWORD:-campost}@postgres:5432/campost_news
+      KAFKA_BROKERS: kafka:9092
+      OUTBOX_POLL_INTERVAL_MS: ${OUTBOX_POLL_INTERVAL_MS:-1000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: .
+      args:
+        SERVICE: notification-service
+        PORT: 3004
+    restart: unless-stopped
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT:-3004}:3004"
+    environment:
+      PORT: 3004
+      DATABASE_URL: postgres://${POSTGRES_USER:-campost}:${POSTGRES_PASSWORD:-campost}@postgres:5432/campost_notifications
+      KAFKA_BROKERS: kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
       kafka:
         condition: service_healthy
 

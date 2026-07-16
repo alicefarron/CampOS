@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@campost/shared-events": "workspace:*",
+    "@fastify/swagger": "^8.15.0",
+    "@fastify/swagger-ui": "^4.1.0",
     "drizzle-orm": "^0.33.0",
     "fastify": "^4.28.0",
     "kafkajs": "^2.2.4",

@@ -32,6 +32,10 @@ export async function runMigrations(): Promise<void> {
   `;
 
   await pg`
+    ALTER TABLE activities ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ
+  `;
+
+  await pg`
     CREATE TABLE IF NOT EXISTS outbox_events (
       id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
       event_type   TEXT        NOT NULL,
